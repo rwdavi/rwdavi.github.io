@@ -1,0 +1,7 @@
+Alpha 1.0
+Basic Framework Added
+Default Tower Added
+Machine Gun Tower Added
+Explosion Tower Added
+Fire Tower Added
+Time Controls Added
