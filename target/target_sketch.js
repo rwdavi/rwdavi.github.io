@@ -2527,7 +2527,7 @@ if __name__ == '__main__':
 
 Random2 = Random()
 
-FrameRate = 50
+FrameRate = 60
 
 PlayerX = 0
 PlayerY = 0
@@ -2565,10 +2565,6 @@ CurrentWave = 0
 SpeedIncreased = False
 Paused = False
 
-mousePressed = False
-
-#[Range, Fire Rate, Price, Splash Range, Damage, [ResidualDamage/s, Duration (seconds), Type]]
-
 Explosions = []
 
 def setup():
@@ -2593,9 +2589,11 @@ def setup():
     global FastFiringTower
     global FireImage
     global FireImage2
+    global Placeholder
     
     size(WindowSizeX, WindowSizeY)
     frameRate(FrameRate)
+    
     Pause = loadImage("Stop.png")
     Unpause = loadImage("Start.png")
     FastFoward = loadImage("Fast Foward Button.png")
@@ -2636,10 +2634,14 @@ def setup():
              [[NormieStats, 20, [0.5,1], 1], [SlowStats, 15, [1,2], 1.5], [SuperFastStats, 10, [3,4], 2]]
              ]
     
-    TowerStats = [[3 * GridSize, 1, 10, 0, 1, [0, 0, ""], DefaultTowerImage], 
-                  [2 * GridSize, 0.25, 40, 0, 1, [0, 0, ""], FastFiringTower], 
-                  [5 * GridSize, 1, 25, 2 * GridSize, 1, [0, 0, ""], ExplosionImage], 
-                  [1.5 * GridSize, 0.5, 30, 0, 0.25, [0.5, 5, "Fire"], FireImage]]
+    #[Range, Fire Rate, Price, Splash Range, Damage, [ResidualDamage/s, Duration (seconds), Type, Slowdown %]]
+    
+    TowerStats = [[3 * GridSize, 1, 12, 0, 1, [0, 0, "", 1], DefaultTowerImage], 
+                  [2 * GridSize, 0.25, 40, 0, 1, [0, 0, "", 1], FastFiringTower], 
+                  [5 * GridSize, 1.25, 25, 2 * GridSize, 1, [0, 0, "", 1], ExplosionImage], 
+                  [1.5 * GridSize, 0.5, 30, 0, 0.25, [0.5, 5, "Fire", 1], FireImage]#,
+                  #[2 * GridSize, 0.5, 30, 0, 0.125, [0, 7, "Ice", 0.5], Placeholder]
+                  ]
     
     SelectedTowerStats = TowerStats[0]
 
@@ -2648,12 +2650,13 @@ class Enemy:
     y = 0
     Health = 0
     MaxHealth = 0
+    OriginalSpeed = 0
     Speed = 0
     CurrentSpot = 0
     Reward = 0
     Image = None
     VehicleStuff = None
-    ResidualDamage = [0,0, ""]
+    ResidualDamage = [0,0, "", 1]
     ResidualDamageDelay = 0
     
     def __init__(self, x, y, Health, Speed, Reward, Image, VehicleStuff, StartingPath):
@@ -2661,6 +2664,7 @@ class Enemy:
         self.y = y
         self.Health = Health
         self.MaxHealth = Health
+        self.OriginalSpeed = Speed
         self.Speed = Speed
         self.Reward = Reward
         self.Image = Image
@@ -2676,19 +2680,31 @@ class Enemy:
         global NormalSprite
         global FastSprite
         global FireImage2
+        global Placeholder
         
         if(self.ResidualDamage[1] > 0):
+            self.Speed = float(self.OriginalSpeed) * float(self.ResidualDamage[3])
+            
             if(self.ResidualDamageDelay <= 0):
                 self.Health = self.Health - self.ResidualDamage[0]
                 self.ResidualDamageDelay = FrameRate
                 self.ResidualDamage[1] = self.ResidualDamage[1] - 1
             else:
                 self.ResidualDamageDelay = self.ResidualDamageDelay - 1
+        else:
+            self.Speed = self.OriginalSpeed
         
         
         self.CurrentSpot = self.CurrentSpot + (float(self.Speed)/float(FrameRate))
             
         if(int(self.CurrentSpot) < len(Level1)):
+            if(floor(self.CurrentSpot) != 0):
+                if(Level1[int(self.CurrentSpot)][0] == Level1[int(self.CurrentSpot - 1)][0]):
+                    self.x = Level1[int(self.CurrentSpot)][0] + GridSize/2 + GridOffsetX
+                else:
+                    if(Level1[int(self.CurrentSpot)][1] == Level1[int(self.CurrentSpot - 1)][1]):
+                        self.y = Level1[int(self.CurrentSpot)][1] + GridSize/2 + GridOffsetY
+            
             if(GridOffsetX + GridSize/2 + Level1[int(self.CurrentSpot)][0] > int(self.x)):
                 self.x = self.x + (float(self.Speed) * (float(GridSize)/float(FrameRate)))
             else:
@@ -2707,6 +2723,10 @@ class Enemy:
         if(self.ResidualDamage[2] == "Fire" and self.ResidualDamage[1] > 0):
             tint(255, 200);
             image(FireImage2, self.x - GridSize/2 - 5, self.y - GridSize/2 - 10)
+        
+        if(self.ResidualDamage[2] == "Ice" and self.ResidualDamage[1] > 0):
+            tint(255, 200);
+            image(Placeholder, self.x - GridSize/2 - 5, self.y - GridSize/2 - 5, 50, 50)
         
         tint(255, 255);
         
@@ -2745,10 +2765,12 @@ class Tower:
     SplashRange = 0
     Damage = 0
     
-    #[Damage, Duration]
+    #[Damage, Duration, Type]
     ResidualDamage = [0,0,""]
     TargetX = 0
     TargetY = 0
+    
+    Target = None
     
     def __init__(self, x, y, Range, FireRate, SplashRange, Damage, ResidualDamage):
         self.x = x
@@ -2764,12 +2786,12 @@ class Tower:
         global FrameRate
         global GridSize
         global Explosions
-            
+        
         self.TimeUntilShot = self.TimeUntilShot - 1
             
         TimeUntilShot = self.TimeUntilShot
             
-        Target = None
+        self.Target = None
         TargetProgress = 0
             
         TowerX = self.x
@@ -2783,36 +2805,30 @@ class Tower:
             
             Distance = sqrt(pow(EnemyX - TowerX, 2) + pow(EnemyY - TowerY, 2))
             
-            if(Distance <= Range):
+            if(Distance <= self.Range):
                 if(EnemyProgress > TargetProgress):
-                    Target = r
+                    self.Target = r
                     TargetProgress = EnemyProgress
             
-            if(Target != None):
-                TargetX = Enemies[Target].x
-                TargetY = Enemies[Target].y
-                
-                self.TargetX = TargetX
-                self.TargetY = TargetY
-                
-                if(self.TimeUntilShot <= 0):
-                    self.TimeUntilShot = self.FireRate * FrameRate
+        if(self.Target != None):
+            self.TargetX = Enemies[self.Target].x
+            self.TargetY = Enemies[self.Target].y
+        
+            if(self.TimeUntilShot <= 0):
+                self.TimeUntilShot = self.FireRate * FrameRate
                     
-                    TargetX = Enemies[Target].x
-                    TargetY = Enemies[Target].y
+                Enemies[self.Target].Health = Enemies[self.Target].Health - self.Damage
                     
-                    Enemies[Target].Health = Enemies[Target].Health - self.Damage
-                    
-                    if(self.SplashRange > 0):
-                        Explosions.append(Explosion(TargetX, TargetY, self.SplashRange * 2, 0.375 * FrameRate))
+                if(self.SplashRange > 0):
+                    Explosions.append(Explosion(self.TargetX, self.TargetY, self.SplashRange * 2, 0.375 * FrameRate))
                         
-                        for r in range(0, len(Enemies)):
-                            if(r != Target):
-                                if(sqrt(pow(Enemies[r].x - TargetX, 2) + pow(Enemies[r].y - TargetX, 2)) <= self.SplashRange):
-                                    Enemies[r].Health = Enemies[r].Health - self.Damage
+                    for r in range(0, len(Enemies)):
+                        if(r != self.Target):
+                            if(sqrt(pow(Enemies[r].x - self.TargetX, 2) + pow(Enemies[r].y - self.TargetX, 2)) <= self.SplashRange):
+                                Enemies[r].Health = Enemies[r].Health - self.Damage
                     
-                    if(self.ResidualDamage != [0,0, ""]):
-                        Enemies[Target].ResidualDamage = [float(self.ResidualDamage[0]), float(self.ResidualDamage[1]), str(self.ResidualDamage[2])]
+                if(self.ResidualDamage != [0,0, ""]):
+                    Enemies[self.Target].ResidualDamage = [float(self.ResidualDamage[0]), float(self.ResidualDamage[1]), str(self.ResidualDamage[2]), float(self.ResidualDamage[3])]
                                     
                         #if(Enemies[i].Health <= 0):
                             #global Coins
@@ -2836,6 +2852,9 @@ class EnemyGroup:
     StartingCoords = []
     
     def __init__(self, Stats, Quantity, GenerationRate, StartDelay, StartingPath, StartingCoords):
+        global FrameRate
+        print(FrameRate)
+        
         self.Stats = Stats
         self.Quantity = Quantity
         self.GenerationRate = GenerationRate
@@ -2861,8 +2880,9 @@ class EnemyGroup:
                     Enemies.append(Enemy(Level1[0][0] + GridOffsetX - GridSize/2, Level1[0][1] + GridOffsetY + GridSize/2, self.Stats[0], self.Stats[1], self.Stats[2], self.Stats[3], self.Stats[4], self.StartingPath))
                 else:
                     Enemies.append(Enemy(self.StartingCoords[0], self.StartingCoords[1], self.Stats[0], self.Stats[1], self.Stats[2], self.Stats[3], self.Stats[4], self.StartingPath))
+                
+                self.WaitUntil = Random2.uniform(self.GenerationRate[0] * float(FrameRate), self.GenerationRate[1] * float(FrameRate))
                     
-                self.WaitUntil = Random2.randint(self.GenerationRate[0] * FrameRate, self.GenerationRate[1] * FrameRate)
                 self.FramesSinceSpawn = 0
                 self.Quantity = self.Quantity - 1
 
@@ -2875,6 +2895,8 @@ def AddEnemy(X, Y, Health, Speed):
 def AddTower(X, Y, Range, FireRate):
     global Towers
     Towers.append([[X, Y], Range, [int(FrameRate/FireRate), int(FireRate * FrameRate)]])
+    
+mousePressed = False
 
 def draw():
     global PlayerX
@@ -2917,24 +2939,41 @@ def draw():
     global Explosions
     global mousePressed
     
+    if(SpeedIncreased == False):
+        FrameRate = int(frameRate())
+    else:
+        if(SpeedIncreased == True):
+            FrameRate = int(frameRate()/float(3))
+    
     #print(frameCount)
     
     CursorOnPath = False
     CursorOnGrid = True
     CursorOnTower = False
     
-    background(200)
+    if(Paused == False or Paused == True):
+        background(200)
     
     if(Paused == False or Paused == True):
         for i in range(0, len(Level1)):
+            #print("Checkpoint 1")
+            
             fill(153,77,0)
             rect(Level1[i][0] + GridOffsetX, Level1[i][1] + GridOffsetY, GridSize, GridSize)
+            
+            #print("Checkpoint 2")
         
-        for i in range(0, int(GridSizeX/GridSize)):
-            line(i * GridSize + GridOffsetX, 0 + GridOffsetY, i * GridSize + GridOffsetX, GridSizeY + GridOffsetY)
+        #print("Checkpoint 3")
+        
+        for i in range(0, int(float(GridSizeX)/float(GridSize))):
+            #print("Checkpoint 4")
+            line(int(i * GridSize + GridOffsetX), int(0 + GridOffsetY), int(i * GridSize + GridOffsetX), int(GridSizeY + GridOffsetY))
+            #print("Checkpoint 5")
+        
+        #print("Checkpoint 6")
         
         for i in range(0, int(GridSizeY/GridSize)):
-            line(0 + GridOffsetX, (i * GridSize) + GridOffsetY, GridSizeX + GridOffsetX, (i * GridSize) + GridOffsetY)
+            line(int(0 + GridOffsetX), int((i * GridSize) + GridOffsetY), int(GridSizeX + GridOffsetX), int((i * GridSize) + GridOffsetY))
     
     if(Paused == False or Paused == True):
         PlayerX = int(mouseX/GridSize) * GridSize + GridOffsetX
@@ -2983,7 +3022,7 @@ def draw():
             fill(240,0,0)
                 
         rect(PlayerX, PlayerY, GridSize, GridSize)
-
+    
     #print("Checkpoint 1")
     
     if(mousePressed == True and MousePressed == False):
@@ -2996,10 +3035,8 @@ def draw():
         
         if(mouseX >= 640 and mouseX <= 680 and mouseY >= 3 and mouseY <= 43):
             if(SpeedIncreased == False and Paused == False):
-                frameRate(FrameRate * 3)
                 SpeedIncreased = True
             else:
-                frameRate(FrameRate)
                 SpeedIncreased = False
         
         if(mouseX >= 720 and mouseX <= 760 and mouseY >= 3 and mouseY <= 43):
@@ -3073,11 +3110,11 @@ def draw():
             strokeWeight(1)
             
             Towers[i].Update()
-    
-    #print("Checkpoint 4")
-    
+            
+    #print("Checkpoint 4")   
+
     ItemsRemoved = 0
-     
+    
     if(Paused == False or Paused == True):
         for i in range(0, len(Enemies)):        
             try:
@@ -3099,7 +3136,7 @@ def draw():
                     ItemsRemoved = ItemsRemoved + 1
                 
             except:
-                print("Thingy that really frustrates me")    
+                print("Thingy that really frustrates me")
 
     #print("Checkpoint 5")
     
@@ -3116,7 +3153,7 @@ def draw():
             else:
                 text(str(Coins),200,35)
     
-    #print("Checkpoint 6")
+    print("Checkpoint 1")
             
     #fill(255,213,0)
     #circle(180, 22, 35)
@@ -3138,7 +3175,7 @@ def draw():
     else:
         image(SlowDown, 640, 3)
     
-    #print("Checkpoint 7")
+    #print("Checkpoint 2")
     
     for i in range(0, len(TowerStats)):
         #fill(255)
@@ -3152,7 +3189,7 @@ def draw():
         textSize(35)
         text("$" + str(TowerStats[i][2]), 850, 75 + (GridSize * i))
         
-    #print("Checkpoint 8")
+    #print("Checkpoint 3")
     
     ItemsRemoved = 0
     
@@ -3160,22 +3197,23 @@ def draw():
         if(EnemyGroups != []):
             for i in range(0, len(EnemyGroups)):
                 EnemyGroups[i - ItemsRemoved].Update()
-                
                 if(EnemyGroups[i - ItemsRemoved].Quantity <= 0):
                     EnemyGroups.pop(i - ItemsRemoved)
     except:
-        print("Enemy groups just took an L")
-    
-    #print("Checkpoint 9")
+        print("Enemy groups just took an l")
+        
+    #print("Checkpoint 4")
     
     if(EnemyGroups == [] and Enemies == []):
         if(CurrentWave < len(Waves)):
             for i in range(0, len(Waves[CurrentWave])):
+                #print("Checkpoint 5 New")
                 EnemyGroups.append(EnemyGroup(Waves[CurrentWave][i][0], Waves[CurrentWave][i][1], Waves[CurrentWave][i][2], Waves[CurrentWave][i][3], 0, []))
+                #print("Checkpoint 6")
             
             CurrentWave = CurrentWave + 1
     
-    #print("Checkpoint 10")
+    #print("Checkpoint 7")
 
 def mouseClicked(fxn):
     global mousePressed
