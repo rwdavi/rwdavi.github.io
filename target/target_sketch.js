@@ -1630,6 +1630,8 @@ windowResized = None
 `;
 
 let userCode = `
+print("This is indeed the new new new new new new new new new new new new new new new version")
+
 """Random variable generators.
 
     bytes
@@ -2527,6 +2529,9 @@ if __name__ == '__main__':
 
 Random2 = Random()
 
+class config:
+    HealthSymbol = None
+
 FrameRate = 60
 
 PlayerX = 0
@@ -2543,11 +2548,13 @@ GridOffsetY = 45
 
 GridSize = 40
 
-Level1 = [[0, 200], [40, 200], [80, 200], [120, 200], [160, 200], [200, 200], [240, 200], [240, 160], [240, 120], [240, 80], [280, 80], [320, 80], [360, 80], [400, 80], [440, 80], [440, 120], [440, 160], [440, 200], [440, 240], [440, 280], [440, 320], [400, 320], [360, 320], [320, 320], [320, 360], [320, 400], [320, 440], [360, 440], [400, 440], [440, 440], [480, 440], [520, 440], [560, 440], [600, 440], [600, 400], [600, 360], [600, 320], [600, 280], [600, 240], [600, 200], [640, 200], [680, 200], [720, 200], [760, 200]]
+Level1 = [[-40, 200], [0, 200], [40, 200], [80, 200], [120, 200], [160, 200], [200, 200], [240, 200], [240, 160], [240, 120], [240, 80], [280, 80], [320, 80], [360, 80], [400, 80], [440, 80], [440, 120], [440, 160], [440, 200], [440, 240], [440, 280], [440, 320], [400, 320], [360, 320], [320, 320], [320, 360], [320, 400], [320, 440], [360, 440], [400, 440], [440, 440], [480, 440], [520, 440], [560, 440], [600, 440], [600, 400], [600, 360], [600, 320], [600, 280], [600, 240], [600, 200], [640, 200], [680, 200], [720, 200], [760, 200]]
 
 CursorOnPath = False
 CursorOnGrid = False
 CursorOnTower = False
+
+TowerOnCursor = None
 
 CurrentSpot = [0]
 FramesSinceSpawn = 0
@@ -2567,8 +2574,25 @@ Paused = False
 
 Explosions = []
 
+Particles = []
+
+Delete = False
+
+class RichardMode:
+    Letters = ["r", "i", "c", "h", "a", "r", "d"]
+    CurrentLetter = 0
+    Enabled = False
+
+class AndersonMode:
+    Letters = ["d", "o", "o", "m", "t", "r", "a", "c", "t", "o", "r"]
+    CurrentLetter = 0
+    Enabled = False
+    
+    DoomTractorStats = []
+
+AndersonMode = AndersonMode()
+
 def setup():
-    global HealthSymbol
     global CoinsSymbol
     global NormalSprite
     global FastSprite
@@ -2577,6 +2601,7 @@ def setup():
     global FastStats
     global SlowStats
     global Boss1Stats
+    global Boss2Stats
     global Waves
     global FastFoward
     global SlowDown
@@ -2589,7 +2614,14 @@ def setup():
     global FastFiringTower
     global FireImage
     global FireImage2
+    global FrostTowerIcon
     global Placeholder
+    global SniperTowerIcon
+    global SuperFastStats
+    global DeleteIcon
+    global SoldierStats
+    global BarracksSprite
+    global FrameRate
     
     size(WindowSizeX, WindowSizeY)
     frameRate(FrameRate)
@@ -2599,19 +2631,34 @@ def setup():
     FastFoward = loadImage("Fast Foward Button.png")
     SlowDown = loadImage("Slow Down Button.png")
     
-    HealthSymbol = loadImage("Health.png")
+    config.HealthSymbol = loadImage("Health.png")
     CoinsSymbol = loadImage("Coin.png")
     NormalSprite = loadImage("Normal Enemy.png")
     FastSprite = loadImage("Fast Enemy.png")
     SlowSprite = loadImage("Slow Enemy.png")
     Boss1Sprite = loadImage("Boss1.png")
+    Boss2Sprite = loadImage("Boss 2.png")
+    LightningSprite = loadImage("Lightning Enemy.png")
     Placeholder = loadImage("Placeholder.png")
+    AndersonMode.DoomTractorStats = [10000, 13, 999999999999999, Placeholder, [False]]
     
     DefaultTowerImage = loadImage("Default Tower.png")
     FastFiringTower = loadImage("Fast Firing Tower 2.png")
     ExplosionImage = loadImage("Explosion.png")
     FireImage = loadImage("Fire.png")
     FireImage2 = loadImage("Fire2.png")
+    FrostTowerIcon = loadImage("Snowflake.png")
+    SniperTowerIcon = loadImage("Sniper Icon.png")
+    FarmTowerIcon = loadImage("Farm Tower.png")
+    
+    FarmSprite = loadImage("Bank.png")
+    BarracksSprite = loadImage("Barracks.png")
+    BarracksSprite2 = loadImage("Barracks 2.png")
+    
+    SoldierSprite = loadImage("Soldier.png")
+    JeepSprite = loadImage("Jeep.png")
+    
+    DeleteIcon = loadImage("Delete Icon.png")
     
     #[Health, Speed, Reward, Sprite, [Spawns more enemies, {The enemies}]]
     
@@ -2621,7 +2668,14 @@ def setup():
     Boss1Stats = [200, 0.25, 30, Boss1Sprite, [False]]
     VehicleNormieStats = [4, 1.5, 0, NormalSprite, [False]]
     VehicleStats = [5, 1, 2, Placeholder, [True, [VehicleNormieStats, 5, [0.5,1], 1]]]
-    SuperFastStats = [20, 4, 3, Placeholder, [False]]
+    SuperFastStats = [20, 4, 3, LightningSprite, [False]]
+    Boss2Stats = [1000, 0.1875, 50, Boss2Sprite, [False]]
+    
+    
+    #[Health, Speed, Range, Fire Rate, Damage, Sprite]
+    
+    SoldierStats = [4, 1.5, 3.5 * GridSize, 1, 1, SoldierSprite]
+    JeepStats = [25, 1.25, 0, 0, 0, Placeholder]
     
     Waves = [
              [[NormieStats, 10, [4,5], 1]], 
@@ -2631,16 +2685,22 @@ def setup():
              [[NormieStats, 10, [1,2], 1], [SlowStats, 5, [3,5], 3], [Boss1Stats, 1, [0,0], 10]], 
              [[NormieStats, 20, [1,2], 1], [FastStats, 20, [1,2], 2], [SlowStats, 10, [2,4], 3]],
              [[VehicleStats, 7, [2,3], 3], [FastStats, 15, [1,3], 1.5], [NormieStats, 20, [1,2], 1]],
-             [[NormieStats, 20, [0.5,1], 1], [SlowStats, 15, [1,2], 1.5], [SuperFastStats, 10, [3,4], 2]]
+             [[NormieStats, 20, [0.5,1], 1], [SlowStats, 15, [1,2], 1.5], [SuperFastStats, 10, [3,4], 2]],
+             [[NormieStats, 30, [0.5,1], 1], [SlowStats, 20, [1,2], 2], [SuperFastStats, 20, [2,3], 1.5], [VehicleStats, 15, [2,3], 3]],
+             [[NormieStats, 20, [0.5,1], 1], [SlowStats, 10, [1,2], 1.5], [FastStats, 10, [1,2], 1], [SuperFastStats, 10, [2,3], 2], [Boss1Stats, 3, [8,8], 3], [Boss2Stats, 1, [0,0], 13]]
              ]
     
-    #[Range, Fire Rate, Price, Splash Range, Damage, [ResidualDamage/s, Duration (seconds), Type, Slowdown %]]
+    #[Range (Radius), Fire Rate, Price, Splash Range, Damage, [ResidualDamage/s, Duration (seconds), Type, Slowdown %], Image, Money Generated Per Wave, UnitSpawns]
     
-    TowerStats = [[3 * GridSize, 1, 12, 0, 1, [0, 0, "", 1], DefaultTowerImage], 
-                  [2 * GridSize, 0.25, 40, 0, 1, [0, 0, "", 1], FastFiringTower], 
-                  [5 * GridSize, 1.25, 25, 2 * GridSize, 1, [0, 0, "", 1], ExplosionImage], 
-                  [1.5 * GridSize, 0.5, 30, 0, 0.25, [0.5, 5, "Fire", 1], FireImage]#,
-                  #[2 * GridSize, 0.5, 30, 0, 0.125, [0, 7, "Ice", 0.5], Placeholder]
+    TowerStats = [[3 * GridSize, 1, 12, 0, 1, [0, 0, "", 1], DefaultTowerImage, 0, [0, 0, None], None], 
+                  [2 * GridSize, 0.25, 40, 0, 1, [0, 0, "", 1], FastFiringTower, 0, [0, 0, None], None], 
+                  [4.5 * GridSize, 1.25, 25, 2 * GridSize, 1, [0, 0, "", 1], ExplosionImage, 0, [0, 0, None], None], 
+                  [1.5 * GridSize, 0.5, 30, 0, 0.25, [0.5, 5, "Fire", 1], FireImage, 0, [0, 0, None], None],
+                  [2 * GridSize, 0.5, 30, 0, 0.125, [0, 7, "Ice", 0.5], FrostTowerIcon, 0, [0, 0, None], None],
+                  [6 * GridSize, 2.5, 60, 0, 5, [0, 0, "", 1], SniperTowerIcon, 0, [0, 0, None], None],
+                  [0, 0, 35, 0, 0, [0, 0, "", 1], FarmTowerIcon, 10, [0, 0, None], FarmSprite],
+                  [0, 0, 50, 0, 0, [0, 0, "", 1], BarracksSprite, 0, [1, 15, SoldierStats], BarracksSprite2],
+                  [0, 0, 60, 0, 0, [0, 0, "", 1], JeepSprite, 0, [1, 25, JeepStats], Placeholder]
                   ]
     
     SelectedTowerStats = TowerStats[0]
@@ -2694,28 +2754,30 @@ class Enemy:
         else:
             self.Speed = self.OriginalSpeed
         
-        
-        self.CurrentSpot = self.CurrentSpot + (float(self.Speed)/float(FrameRate))
+        try:
+            self.CurrentSpot = self.CurrentSpot + (float(self.Speed)/float(FrameRate))
             
-        if(int(self.CurrentSpot) < len(Level1)):
-            if(floor(self.CurrentSpot) != 0):
-                if(Level1[int(self.CurrentSpot)][0] == Level1[int(self.CurrentSpot - 1)][0]):
-                    self.x = Level1[int(self.CurrentSpot)][0] + GridSize/2 + GridOffsetX
-                else:
-                    if(Level1[int(self.CurrentSpot)][1] == Level1[int(self.CurrentSpot - 1)][1]):
-                        self.y = Level1[int(self.CurrentSpot)][1] + GridSize/2 + GridOffsetY
-            
-            if(GridOffsetX + GridSize/2 + Level1[int(self.CurrentSpot)][0] > int(self.x)):
-                self.x = self.x + (float(self.Speed) * (float(GridSize)/float(FrameRate)))
-            else:
-                if(GridOffsetX + GridSize/2 + Level1[int(self.CurrentSpot)][0] < int(self.x)):
-                    self.x = self.x - (float(self.Speed) * (float(GridSize)/float(FrameRate)))
-                    
-            if(GridOffsetY + GridSize/2 + Level1[int(self.CurrentSpot)][1] > int(self.y)):
-                self.y = self.y + (float(self.Speed) * (float(GridSize)/float(FrameRate)))
-            else:
-                if(GridOffsetY + GridSize/2 + Level1[int(self.CurrentSpot)][1] < int(self.y)):
-                    self.y = self.y - (float(self.Speed) * (float(GridSize)/float(FrameRate)))
+            if(int(self.CurrentSpot) < len(Level1)):
+                if(floor(self.CurrentSpot) != 0):
+                    if(Level1[int(self.CurrentSpot)][0] == Level1[int(self.CurrentSpot) - 1][0]):
+                        self.x = Level1[int(self.CurrentSpot)][0] + GridSize/2 + GridOffsetX
+                    else:
+                        if(Level1[int(self.CurrentSpot)][1] == Level1[int(self.CurrentSpot) - 1][1]):
+                            self.y = Level1[int(self.CurrentSpot)][1] + GridSize/2 + GridOffsetY
+                
+                    if(GridOffsetX + GridSize/2 + Level1[int(self.CurrentSpot)][0] > int(self.x)):
+                        self.x = self.x + (float(self.Speed) * (float(GridSize)/float(FrameRate)))
+                    else:
+                        if(GridOffsetX + GridSize/2 + Level1[int(self.CurrentSpot)][0] < int(self.x)):
+                            self.x = self.x - (float(self.Speed) * (float(GridSize)/float(FrameRate)))
+                            
+                    if(GridOffsetY + GridSize/2 + Level1[int(self.CurrentSpot)][1] > int(self.y)):
+                        self.y = self.y + (float(self.Speed) * (float(GridSize)/float(FrameRate)))
+                    else:
+                        if(GridOffsetY + GridSize/2 + Level1[int(self.CurrentSpot)][1] < int(self.y)):
+                            self.y = self.y - (float(self.Speed) * (float(GridSize)/float(FrameRate)))
+        except:
+            print("Ig it's paused")
         
         fill(255)
         image(self.Image, self.x - GridSize/2, self.y - GridSize/2)
@@ -2729,6 +2791,114 @@ class Enemy:
             image(Placeholder, self.x - GridSize/2 - 5, self.y - GridSize/2 - 5, 50, 50)
         
         tint(255, 255);
+        
+        if(self.Health < 0):
+            self.Health = 0
+        
+        fill(255, 0, 0)
+        rect(self.x - (GridSize/2), self.y - (GridSize/2) - 8, GridSize - (GridSize * (float(self.Health)/float(self.MaxHealth))), 5)
+            
+        fill(255)
+        rect(self.x - (GridSize/2) + (GridSize - (GridSize * (float(self.Health)/float(self.MaxHealth)))), self.y - (GridSize/2) - 8, GridSize * (float(self.Health)/float(self.MaxHealth)), 5)
+
+class Soldier:
+    x = 0
+    y = 0
+    Health = 0
+    MaxHealth = 0
+    Speed = 0
+    Range = 0
+    FireRate = 0
+    Damage = 0
+    Image = None
+    
+    CurrentSpot = 0
+    
+    Target = None
+    TimeUntilShot = 0
+    
+    def __init__(self, x, y, CurrentSpot, Health, Speed, Range, FireRate, Damage, Image):
+        self.x = x
+        self.y = y
+        self.CurrentSpot = CurrentSpot
+        self.Health = Health
+        self.MaxHealth = Health
+        self.Speed = Speed
+        self.Range = Range
+        self.FireRate = FireRate
+        self.Damage = Damage
+        self.Image = Image
+                
+    def Update(self):
+        global FrameRate
+        global GridSize
+        global Level1
+        global GridOffsetX
+        global GridOffsetY
+        global Enemies
+        
+        try:
+            self.TimeUntilShot = self.TimeUntilShot - 1
+            self.Target = None
+            
+            TargetProgress = 0
+            
+            for r in range(0, len(Enemies)):
+                EnemyX = Enemies[r].x
+                EnemyY = Enemies[r].y
+                EnemyProgress = Enemies[r].CurrentSpot
+                
+                Distance = sqrt(pow(EnemyX - self.x, 2) + pow(EnemyY - self.y, 2))
+                
+                if(Distance <= 5):
+                    OriginalEnemyHealth = Enemies[r].Health
+                    Enemies[r].Health = Enemies[r].Health - self.Health
+                    self.Health = self.Health - OriginalEnemyHealth
+                
+                if(Distance <= self.Range):
+                    if(EnemyProgress > TargetProgress):
+                        self.Target = r
+                        TargetProgress = EnemyProgress
+            
+            if(self.Target == None):
+                self.CurrentSpot = self.CurrentSpot - (float(self.Speed)/float(FrameRate))
+                
+                if(int(self.CurrentSpot) < len(Level1)):
+                    if(floor(self.CurrentSpot) != 0):
+                        if(Level1[int(self.CurrentSpot)][0] == Level1[int(self.CurrentSpot) + 1][0]):
+                            self.x = Level1[int(self.CurrentSpot)][0] + GridSize/2 + GridOffsetX
+                        else:
+                            if(Level1[int(self.CurrentSpot)][1] == Level1[int(self.CurrentSpot) + 1][1]):
+                                self.y = Level1[int(self.CurrentSpot)][1] + GridSize/2 + GridOffsetY
+                    
+                        if(GridOffsetX + GridSize/2 + Level1[int(self.CurrentSpot)][0] > int(self.x)):
+                            self.x = self.x + (float(self.Speed) * (float(GridSize)/float(FrameRate)))
+                        else:
+                            if(GridOffsetX + GridSize/2 + Level1[int(self.CurrentSpot)][0] < int(self.x)):
+                                self.x = self.x - (float(self.Speed) * (float(GridSize)/float(FrameRate)))
+                                
+                        if(GridOffsetY + GridSize/2 + Level1[int(self.CurrentSpot)][1] > int(self.y)):
+                            self.y = self.y + (float(self.Speed) * (float(GridSize)/float(FrameRate)))
+                        else:
+                            if(GridOffsetY + GridSize/2 + Level1[int(self.CurrentSpot)][1] < int(self.y)):
+                                self.y = self.y - (float(self.Speed) * (float(GridSize)/float(FrameRate)))
+            else:
+                if(self.TimeUntilShot <= 0):
+                    Enemies[self.Target].Health = Enemies[self.Target].Health - 1
+                    self.TimeUntilShot = self.FireRate * FrameRate
+        except:
+            print("Ig it's paused")
+            
+        #fill(255, 255, 255, 100)
+        #noStroke()
+        #circle(self.x, self.y, self.Range * 2)
+        
+        fill(255)
+        stroke(0)
+        image(self.Image, self.x - GridSize/2, self.y - GridSize/2)
+        
+        if(self.Health < 0):
+            self.Health = 0
         
         fill(255, 0, 0)
         rect(self.x - (GridSize/2), self.y - (GridSize/2) - 8, GridSize - (GridSize * (float(self.Health)/float(self.MaxHealth))), 5)
@@ -2764,15 +2934,28 @@ class Tower:
     TimeUntilShot = 0
     SplashRange = 0
     Damage = 0
+    MoneyPerWave = 0
+    Price = 0
     
-    #[Damage, Duration, Type]
-    ResidualDamage = [0,0,""]
+    #[Quantity, Time Between Spawns, Stats]
+    UnitSpawning = [0, 0, None]
+    
+    TimeUntilUnitSpawn = 0
+    
+    #[Damage, Duration, Type, Slowdown %]
+    ResidualDamage = [0,0,"", 1]
     TargetX = 0
     TargetY = 0
     
     Target = None
     
-    def __init__(self, x, y, Range, FireRate, SplashRange, Damage, ResidualDamage):
+    Units = []
+    
+    Sprite = None
+    
+    def __init__(self, x, y, Range, FireRate, SplashRange, Damage, ResidualDamage, MoneyPerWave, Price, UnitSpawning, Sprite):
+        global FrameRate
+        
         self.x = x
         self.y = y
         self.Range = Range
@@ -2780,12 +2963,18 @@ class Tower:
         self.SplashRange = SplashRange
         self.Damage = Damage
         self.ResidualDamage = ResidualDamage
+        self.MoneyPerWave = MoneyPerWave
+        self.Price = Price
+        self.UnitSpawning = UnitSpawning
+        self.Units = []
+        self.Sprite = Sprite
     
     def Update(self):
         global Enemies
         global FrameRate
         global GridSize
         global Explosions
+        global Level1
         
         self.TimeUntilShot = self.TimeUntilShot - 1
             
@@ -2797,6 +2986,22 @@ class Tower:
         TowerX = self.x
         TowerY = self.y
         Range = self.Range
+        
+        if(self.UnitSpawning != [0, 0, None]):
+            self.TimeUntilUnitSpawn = self.TimeUntilUnitSpawn - 1
+            
+            if(self.TimeUntilUnitSpawn <= 0):
+                self.Units.append(Soldier(Level1[-1][0] + GridOffsetX + GridSize + GridSize/2, Level1[-1][1] + GridOffsetY + GridSize, -1, self.UnitSpawning[2][0], self.UnitSpawning[2][1], self.UnitSpawning[2][2], self.UnitSpawning[2][3], self.UnitSpawning[2][4], self.UnitSpawning[2][5]))
+                
+                self.TimeUntilUnitSpawn = self.UnitSpawning[1] * FrameRate
+            
+            if(self.Units != []):
+                for i in range(0, len(self.Units)):
+                    self.Units[i].Update()
+                    
+                    if(abs(self.Units[i].CurrentSpot) > len(Level1) or self.Units[i].Health <= 0):
+                        self.Units.pop(i)
+                        break #There's a better way to do this and you know it...
         
         for r in range(0, len(Enemies)):
             EnemyX = Enemies[r].x
@@ -2827,7 +3032,7 @@ class Tower:
                             if(sqrt(pow(Enemies[r].x - self.TargetX, 2) + pow(Enemies[r].y - self.TargetX, 2)) <= self.SplashRange):
                                 Enemies[r].Health = Enemies[r].Health - self.Damage
                     
-                if(self.ResidualDamage != [0,0, ""]):
+                if(self.ResidualDamage != [0,0, "", 1] and Enemies[self.Target].ResidualDamage[1] <= 0):
                     Enemies[self.Target].ResidualDamage = [float(self.ResidualDamage[0]), float(self.ResidualDamage[1]), str(self.ResidualDamage[2]), float(self.ResidualDamage[3])]
                                     
                         #if(Enemies[i].Health <= 0):
@@ -2858,7 +3063,9 @@ class EnemyGroup:
         self.Stats = Stats
         self.Quantity = Quantity
         self.GenerationRate = GenerationRate
+        print("Thing")
         self.StartDelay = StartDelay * FrameRate
+        print("Thing 2")
         self.StartingPath = StartingPath
         self.StartingCoords = StartingCoords
     
@@ -2877,16 +3084,48 @@ class EnemyGroup:
                 global GridOffsetY
                 
                 if(self.StartingCoords == []):
-                    Enemies.append(Enemy(Level1[0][0] + GridOffsetX - GridSize/2, Level1[0][1] + GridOffsetY + GridSize/2, self.Stats[0], self.Stats[1], self.Stats[2], self.Stats[3], self.Stats[4], self.StartingPath))
+                    Enemies.append(Enemy(Level1[0][0] + GridOffsetX + GridSize/2, Level1[0][1] + GridOffsetY + GridSize/2, self.Stats[0], self.Stats[1], self.Stats[2], self.Stats[3], self.Stats[4], self.StartingPath))
                 else:
                     Enemies.append(Enemy(self.StartingCoords[0], self.StartingCoords[1], self.Stats[0], self.Stats[1], self.Stats[2], self.Stats[3], self.Stats[4], self.StartingPath))
                 
                 self.WaitUntil = Random2.uniform(self.GenerationRate[0] * float(FrameRate), self.GenerationRate[1] * float(FrameRate))
-                    
+                
                 self.FramesSinceSpawn = 0
                 self.Quantity = self.Quantity - 1
 
+class Particle:
+    x = 0
+    y = 0
+    
+    Image = None
+    Text = ""
+    Duration = 0
+    
+    def __init__(self, x, y, Image, Text, Duration):
+        self.x = x
+        self.y = y
+        self.Image = Image
+        self.Text = Text
+        self.Duration = Duration
+    
+    def Update(self):
+        global Paused
+        global FrameRate
+        
+        if(self.Image != None):
+            image(self.Image, self.x, self.y)
+            
+        if(self.Text != ""):
+            fill(67, 179, 81)
+            textSize(35)
+            text(self.Text, self.x, self.y)
+            fill(255)
+        
+        if(Paused == False):
+            self.Duration = float(self.Duration) - float(float(1)/float(FrameRate))
+
 MousePressed = False
+mousePressed = False
 
 def AddEnemy(X, Y, Health, Speed):
     global Enemies
@@ -2895,8 +3134,8 @@ def AddEnemy(X, Y, Health, Speed):
 def AddTower(X, Y, Range, FireRate):
     global Towers
     Towers.append([[X, Y], Range, [int(FrameRate/FireRate), int(FireRate * FrameRate)]])
-    
-mousePressed = False
+
+RichardMode = RichardMode()
 
 def draw():
     global PlayerX
@@ -2917,11 +3156,11 @@ def draw():
     global Towers
     global TowerClass
     global MousePressed
+    global mousePressed
     global FrameRate
     global CursorOnGrid
     global Coins
     global BaseHealth
-    global HealthSymbol
     global CoinsSymbol
     global EnemyGroups
     global CurrentWave
@@ -2937,46 +3176,40 @@ def draw():
     global TowerStats
     global SelectedTowerStats
     global Explosions
-    global mousePressed
+    global Particles
+    global DeleteIcon
+    global Delete
+    global TowerOnCursor
     
-    if(SpeedIncreased == False):
-        FrameRate = int(frameRate())
+    if(Paused == False):
+        if(SpeedIncreased == False):
+            FrameRate = int(frameRate())
+        else:
+            if(SpeedIncreased == True):
+                FrameRate = int(frameRate()/3)
     else:
-        if(SpeedIncreased == True):
-            FrameRate = int(frameRate()/float(3))
-    
-    #print(frameCount)
+        FrameRate = 0
     
     CursorOnPath = False
     CursorOnGrid = True
     CursorOnTower = False
     
+    TowerOnCursor = None
+    
     if(Paused == False or Paused == True):
         background(200)
     
-    if(Paused == False or Paused == True):
-        for i in range(0, len(Level1)):
-            #print("Checkpoint 1")
-            
-            fill(153,77,0)
-            rect(Level1[i][0] + GridOffsetX, Level1[i][1] + GridOffsetY, GridSize, GridSize)
-            
-            #print("Checkpoint 2")
+    for i in range(0, len(Level1)):
+        fill(153,77,0)
+        rect(Level1[i][0] + GridOffsetX, Level1[i][1] + GridOffsetY, GridSize, GridSize)
         
-        #print("Checkpoint 3")
+    for i in range(0, int(GridSizeX/GridSize)):
+        line(i * GridSize + GridOffsetX, 0 + GridOffsetY, i * GridSize + GridOffsetX, GridSizeY + GridOffsetY)
         
-        for i in range(0, int(float(GridSizeX)/float(GridSize))):
-            #print("Checkpoint 4")
-            line(int(i * GridSize + GridOffsetX), int(0 + GridOffsetY), int(i * GridSize + GridOffsetX), int(GridSizeY + GridOffsetY))
-            #print("Checkpoint 5")
-        
-        #print("Checkpoint 6")
-        
-        for i in range(0, int(GridSizeY/GridSize)):
-            line(int(0 + GridOffsetX), int((i * GridSize) + GridOffsetY), int(GridSizeX + GridOffsetX), int((i * GridSize) + GridOffsetY))
+    for i in range(0, int(GridSizeY/GridSize)):
+        line(0 + GridOffsetX, (i * GridSize) + GridOffsetY, GridSizeX + GridOffsetX, (i * GridSize) + GridOffsetY)
     
-    if(Paused == False or Paused == True):
-        PlayerX = int(mouseX/GridSize) * GridSize + GridOffsetX
+    PlayerX = int(mouseX/GridSize) * GridSize + GridOffsetX
     
     if(PlayerX < GridOffsetX):
         PlayerX = GridOffsetX
@@ -2986,8 +3219,7 @@ def draw():
             PlayerX = GridSizeX + GridOffsetX - GridSize
             CursorOnGrid = False
         
-    if(Paused == False or Paused == True):
-        PlayerY = int(mouseY/GridSize) * GridSize + GridOffsetY - GridSize
+    PlayerY = int(mouseY/GridSize) * GridSize + GridOffsetY - GridSize
     
     if(PlayerY < GridOffsetY):
         PlayerY = GridOffsetY
@@ -3004,16 +3236,19 @@ def draw():
     for i in range(0, len(Towers)):
         if(Towers[i].x == int(PlayerX + GridSize/2) and Towers[i].y == int(PlayerY + GridSize/2)):
             CursorOnTower = True
+            TowerOnCursor = i
             break
     
-    if(CursorOnGrid == True and Paused == False):
+    if(CursorOnGrid == True):
         if(CursorOnPath == False and CursorOnTower == False):
             fill(255,255,255, 100)
         else:
             fill(240,0,0, 100)
         
         noStroke()
-        circle(PlayerX + (GridSize/2), PlayerY + (GridSize/2), SelectedTowerStats[0] + GridSize * 2)
+        print("Thingy 7")
+        circle(PlayerX + (GridSize/2), PlayerY + (GridSize/2), SelectedTowerStats[0] * 2)
+        print("Thingy 6")
         stroke(0)
         
         if(CursorOnPath == False and CursorOnTower == False):
@@ -3031,7 +3266,12 @@ def draw():
             for i in range(0, len(TowerStats)):
                 if(mouseY >= 40 + (GridSize * i) and mouseY <= 80 + (GridSize * i)):
                     SelectedTowerStats = TowerStats[i]
+                    Delete = False
                     break
+        
+        if(mouseX >= 800 and mouseX <= 960 and mouseY >= 40):
+            if(mouseY >= 40 + (GridSize * 12) and mouseY <= 80 + (GridSize * 12)):
+                Delete = True
         
         if(mouseX >= 640 and mouseX <= 680 and mouseY >= 3 and mouseY <= 43):
             if(SpeedIncreased == False and Paused == False):
@@ -3045,11 +3285,15 @@ def draw():
             else:
                 Paused = False
         
-        if(CursorOnPath == False and CursorOnGrid == True and Coins >= SelectedTowerStats[2]):
+        if(CursorOnPath == False and CursorOnGrid == True and Coins >= SelectedTowerStats[2] and Delete == False):
             if(CursorOnTower == False):
-                Towers.append(Tower(int(PlayerX + GridSize/2), int(PlayerY + GridSize/2), SelectedTowerStats[0], SelectedTowerStats[1], SelectedTowerStats[3], SelectedTowerStats[4], SelectedTowerStats[5]))
+                Towers.append(Tower(int(PlayerX + GridSize/2), int(PlayerY + GridSize/2), SelectedTowerStats[0], SelectedTowerStats[1], SelectedTowerStats[3], SelectedTowerStats[4], SelectedTowerStats[5], SelectedTowerStats[7], SelectedTowerStats[2], SelectedTowerStats[8], SelectedTowerStats[9]))
                 Coins = Coins - SelectedTowerStats[2]
         
+        if(CursorOnTower == True and Delete == True):
+            Coins = Coins + int(float(Towers[TowerOnCursor].Price) * float(0.75))
+            Towers.pop(TowerOnCursor)
+            
         MousePressed = True
     
     if(mousePressed == False):
@@ -3084,32 +3328,37 @@ def draw():
     
     if(Paused == False or Paused == True):
         for i in range(0, len(Towers)):
-            fill(255)
-            strokeWeight(1)
-            circle(Towers[i].x, Towers[i].y, GridSize)
             
-            TargetX = Towers[i].TargetX
-            TargetY = Towers[i].TargetY
-            
-            TowerX = Towers[i].x
-            TowerY = Towers[i].y
-            
-            try:
-                Angle = atan((TargetY - TowerY)/(TargetX - TowerX))
+            if(Towers[i].Sprite == None):
+                fill(255)
+                strokeWeight(1)
+                circle(Towers[i].x, Towers[i].y, GridSize)
                 
-                stroke(0)
-                strokeWeight(2)
+                TargetX = Towers[i].TargetX
+                TargetY = Towers[i].TargetY
                 
-                if(TargetX >= TowerX):
-                    line(TowerX, TowerY, ((GridSize/2) * cos(Angle)) + TowerX, ((GridSize/2) * sin(Angle)) + TowerY)
-                else:
-                    line(TowerX, TowerY, (-1 * ((GridSize/2) * cos(Angle))) + TowerX, (-1 * ((GridSize/2) * sin(Angle))) + TowerY)
-            except:
-                print("Me no likey that line")
+                TowerX = Towers[i].x
+                TowerY = Towers[i].y
+                
+                try:
+                    Angle = atan((TargetY - TowerY)/(TargetX - TowerX))
+                    
+                    stroke(0)
+                    strokeWeight(2)
+                    
+                    if(TargetX >= TowerX):
+                        line(TowerX, TowerY, ((GridSize/2) * cos(Angle)) + TowerX, ((GridSize/2) * sin(Angle)) + TowerY)
+                    else:
+                        line(TowerX, TowerY, (-1 * ((GridSize/2) * cos(Angle))) + TowerX, (-1 * ((GridSize/2) * sin(Angle))) + TowerY)
+                except:
+                    print("Me no likey that line")
         
-            strokeWeight(1)
+                strokeWeight(1)
+            else:
+                image(Towers[i].Sprite, Towers[i].x - GridSize/2, Towers[i].y - GridSize/2)
             
-            Towers[i].Update()
+            if(Paused == False):
+                Towers[i].Update()
             
     #print("Checkpoint 4")   
 
@@ -3137,6 +3386,18 @@ def draw():
                 
             except:
                 print("Thingy that really frustrates me")
+    
+    ItemsRemoved = 0        
+        
+    for i in range(0, len(Particles)):
+        try:
+            Particles[i - ItemsRemoved].Update()
+                
+            if(Particles[i - ItemsRemoved].Duration <= 0):
+                Particles.pop(i - ItemsRemoved)
+                ItemsRemoved = ItemsRemoved + 1
+        except:
+            print("Particles have left the chat")
 
     #print("Checkpoint 5")
     
@@ -3153,13 +3414,13 @@ def draw():
             else:
                 text(str(Coins),200,35)
     
-    print("Checkpoint 1")
+    #print("Checkpoint 6")
             
     #fill(255,213,0)
     #circle(180, 22, 35)
     fill(0)
         
-    image(HealthSymbol, 22, 9, 30, 24)
+    image(config.HealthSymbol, 22, 9, 30, 24)
         
     text("Current Wave: " + str(CurrentWave), 300, 35)
         
@@ -3175,7 +3436,7 @@ def draw():
     else:
         image(SlowDown, 640, 3)
     
-    #print("Checkpoint 2")
+    #print("Checkpoint 7")
     
     for i in range(0, len(TowerStats)):
         #fill(255)
@@ -3183,37 +3444,71 @@ def draw():
         #strokeWeight(2)
         #line(820, 65 + (GridSize * i), 840, 65 + (GridSize * i))
         
-        image(TowerStats[i][6], 805, 45 + (GridSize * i))
+        image(TowerStats[i][6], 805, 45 + (GridSize * i), 40, 40)
         
         strokeWeight(1)
         textSize(35)
         text("$" + str(TowerStats[i][2]), 850, 75 + (GridSize * i))
+    
+    textSize(35)
+    image(DeleteIcon, 805, 45 + (GridSize * 12))
+    text("Delete", 850, 75 + (GridSize * 12))
+    
+    textSize(15)
+    text("Alpha 1.1.0", 885, 17)
         
-    #print("Checkpoint 3")
+    #print("Checkpoint 8")
     
     ItemsRemoved = 0
     
+    if(RichardMode.CurrentLetter < len(RichardMode.Letters)):
+        if(key == RichardMode.Letters[RichardMode.CurrentLetter]):
+            RichardMode.CurrentLetter = RichardMode.CurrentLetter + 1
+        else:
+            if(key != RichardMode.Letters[RichardMode.CurrentLetter - 1]):
+                RichardMode.CurrentLetter = 0
+    else:
+        RichardMode.Enabled = True
+    
+    
+    if(AndersonMode.CurrentLetter < len(AndersonMode.Letters)):
+        if(key == AndersonMode.Letters[AndersonMode.CurrentLetter]):
+            AndersonMode.CurrentLetter = AndersonMode.CurrentLetter + 1
+        else:
+            if(key != AndersonMode.Letters[AndersonMode.CurrentLetter - 1]):
+                AndersonMode.CurrentLetter = 0
+    else:
+        if(AndersonMode.Enabled == False):
+            Enemies = []
+            EnemyGroups = [EnemyGroup(AndersonMode.DoomTractorStats, 1, [0,0], 1, 0, [])]
+        
+        AndersonMode.Enabled = True
+    
     try:
         if(EnemyGroups != []):
-            for i in range(0, len(EnemyGroups)):
-                EnemyGroups[i - ItemsRemoved].Update()
-                if(EnemyGroups[i - ItemsRemoved].Quantity <= 0):
-                    EnemyGroups.pop(i - ItemsRemoved)
+            if(Paused == False or RichardMode.Enabled == True):
+                for i in range(0, len(EnemyGroups)):
+                    EnemyGroups[i - ItemsRemoved].Update()
+                    if(EnemyGroups[i - ItemsRemoved].Quantity <= 0 and Paused == False):
+                        EnemyGroups.pop(i - ItemsRemoved)
     except:
         print("Enemy groups just took an l")
-        
-    #print("Checkpoint 4")
     
-    if(EnemyGroups == [] and Enemies == []):
+    #print("Checkpoint 9")
+
+    if(EnemyGroups == [] and Enemies == [] and Paused == False and AndersonMode.Enabled == False):
         if(CurrentWave < len(Waves)):
             for i in range(0, len(Waves[CurrentWave])):
-                #print("Checkpoint 5 New")
                 EnemyGroups.append(EnemyGroup(Waves[CurrentWave][i][0], Waves[CurrentWave][i][1], Waves[CurrentWave][i][2], Waves[CurrentWave][i][3], 0, []))
-                #print("Checkpoint 6")
-            
+                
             CurrentWave = CurrentWave + 1
+            
+            for i in range(0, len(Towers)):
+                if(Towers[i].MoneyPerWave > 0):
+                    Coins = Coins + int(Towers[i].MoneyPerWave)
+                    Particles.append(Particle(Towers[i].x - GridSize/2 + 2, Towers[i].y - GridSize + 11, None, "$" + str(Towers[i].MoneyPerWave), 5))
     
-    #print("Checkpoint 7")
+    #print("Checkpoint 10")
 
 def mouseClicked(fxn):
     global mousePressed

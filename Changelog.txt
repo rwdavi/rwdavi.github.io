@@ -5,3 +5,10 @@ Machine Gun Tower Added
 Explosion Tower Added
 Fire Tower Added
 Time Controls Added
+
+Alpha 1.01
+Raised Default Tower Price From 10 coins to 12 coins
+Fixed bug with towers aiming at one enemy, but hitting another
+Lowered Explosion Tower fire rate by 25%
+Optimized the game for lag (No longer relies on the frame rate
+to run at the correct speed)
